@@ -1,0 +1,71 @@
+DANH SÁCH CÁC CHỨC NĂNG & CÔNG VIỆC CẦN LÀM (SOCIAL APP BACKEND)
+
+Dưới đây là danh sách các tính năng cơ bản và các công việc cần hoàn thiện cho hệ thống Social App sử dụng kiến trúc Microservices.
+
+==================================================
+1. AUTH SERVICE (Dịch vụ Xác thực)
+==================================================
+[x] Đăng nhập & Cấp phát JWT Token.
+[x] Đăng ký tài khoản mới.
+[x] Refresh Token.
+[ ] Quên mật khẩu & Đặt lại mật khẩu (Gửi email OTP/Link).
+[ ] Xác thực Email sau khi đăng ký.
+[ ] Đăng xuất (Thu hồi/Blacklist Token).
+[ ] Tích hợp gửi Event (RabbitMQ) "UserRegistered" ngay sau khi đăng ký thành công.
+
+==================================================
+2. USER SERVICE (Dịch vụ Người dùng)
+==================================================
+[x] Lấy thông tin & Cập nhật Profile cơ bản.
+[ ] Lắng nghe Event "UserRegistered" từ RabbitMQ để tự động tạo Profile trống.
+[ ] Upload Avatar / Ảnh bìa (Cần tích hợp Cloudinary, AWS S3 hoặc lưu local).
+[ ] Tính năng Follow / Unfollow người dùng khác.
+[ ] Lấy danh sách Followers / Following.
+[ ] Tìm kiếm người dùng theo Tên / Username.
+
+==================================================
+3. POST SERVICE (Dịch vụ Bài viết)
+==================================================
+[x] Tạo bài viết mới.
+[ ] Tải ảnh/video đính kèm cho bài viết.
+[ ] Chỉnh sửa & Xóa bài viết (Chỉ chủ sở hữu).
+[ ] Tính năng Like / Unlike bài viết.
+[ ] Tính năng Bình luận (Comment) vào bài viết.
+[ ] Lấy News Feed (Bảng tin): Hiển thị bài viết của chính mình và những người mình đang Follow (Cần call sang UserService hoặc lưu cache).
+
+==================================================
+4. CHAT SERVICE (Dịch vụ Nhắn tin - SignalR)
+==================================================
+[x] Cấu hình SignalR Hub cơ bản.
+[ ] Nhắn tin 1-1 (Private Chat) realtime.
+[ ] Chat nhóm (Tạo nhóm, Thêm thành viên, Xóa thành viên).
+[ ] Lịch sử tin nhắn (Phân trang - Pagination).
+[ ] Đánh dấu tin nhắn đã đọc (Read receipts).
+[ ] Quản lý trạng thái Online / Offline của người dùng (thông qua OnConnectedAsync / OnDisconnectedAsync).
+
+==================================================
+5. NOTIFICATION SERVICE (Dịch vụ Thông báo - Cần thêm mới)
+==================================================
+[ ] Tạo mới NotificationService.
+[ ] Lắng nghe Events từ RabbitMQ (VD: PostLiked, UserFollowed, CommentAdded).
+[ ] Lưu thông báo vào DB và đẩy Realtime qua SignalR cho user nhận.
+[ ] Đánh dấu thông báo đã đọc.
+
+==================================================
+6. API GATEWAY (YARP) & BẢO MẬT
+==================================================
+[x] Proxy routing tới các Services.
+[x] Tổng hợp Swagger UI.
+[ ] Xác thực JWT Token trực tiếp ở Gateway (Tùy chọn, hiện tại đang xác thực ở từng Service).
+[ ] Rate Limiting (Hạn chế request spam).
+[ ] Cấu hình CORS chặt chẽ cho Frontend.
+
+==================================================
+7. INFRASTRUCTURE & SHARED (Hạ tầng & Dùng chung)
+==================================================
+[x] Lớp Base Entity.
+[x] Base Repository Interface.
+[ ] Triển khai Generic Repository cho từng Service (Dùng chung CRUD logic).
+[ ] Xử lý Exception toàn cục (Global Exception Handler Middleware).
+[ ] Cấu hình Serilog để ghi log tập trung.
+[ ] Viết Dockerfile cho từng Service và file docker-compose.yml để chạy toàn bộ hệ thống (DB, RabbitMQ, Services) chỉ với 1 lệnh.
