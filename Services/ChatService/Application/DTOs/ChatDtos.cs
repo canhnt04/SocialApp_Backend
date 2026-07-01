@@ -5,8 +5,7 @@ public record MessageDto(
     string Content,
     Guid SenderId,
     string SenderUsername,
-    Guid? RecipientId,
-    Guid? ChatGroupId,
+    Guid ChatId,
     bool IsRead,
     DateTime CreatedAt
 );
@@ -15,28 +14,21 @@ public record SendMessageDto(
     string Content,
     Guid SenderId,
     string SenderUsername,
-    Guid? RecipientId,
-    Guid? ChatGroupId
+    Guid ChatId
 );
 
 public record CreateGroupDto(
     string Name,
-    string? Description,
-    Guid CreatedByUserId,
     List<GroupMemberDto> Members
 );
 
 public record GroupMemberDto(
-    Guid UserId,
-    string Username,
-    bool IsAdmin = false
+    Guid UserId
 );
 
 public record GroupDto(
     Guid Id,
     string Name,
-    string? Description,
-    Guid CreatedByUserId,
     List<GroupMemberDto> Members,
     DateTime CreatedAt
 );

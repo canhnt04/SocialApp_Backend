@@ -26,8 +26,6 @@ public class CreatePostCommandHandler : IRequestHandler<CreatePostCommand, PostD
             AuthorId = request.AuthorId,
             AuthorUsername = request.AuthorUsername,
             Content = request.Content,
-            ImageUrl = request.ImageUrl,
-            VideoUrl = request.VideoUrl,
             Visibility = request.Visibility
         };
 
@@ -49,8 +47,8 @@ public class CreatePostCommandHandler : IRequestHandler<CreatePostCommand, PostD
 
         return new PostDto(
             post.Id, post.AuthorId, post.AuthorUsername, post.Content,
-            post.ImageUrl, post.VideoUrl, post.LikeCount, post.CommentCount,
-            post.ShareCount, post.IsPublished, post.Visibility,
+            null, null, post.LikeCount, post.CommentCount,
+            post.ShareCount, post.IsActive, post.Visibility,
             post.CreatedAt, post.UpdatedAt
         );
     }

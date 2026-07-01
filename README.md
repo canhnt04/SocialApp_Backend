@@ -112,12 +112,15 @@ Nơi tiếp nhận Request HTTP.
    ```
    *(Lưu ý: Nếu bạn chạy lệnh `dotnet run` mà không chỉ định profile, .NET sẽ mặc định chạy bằng HTTP profile với các cổng `5000` và `520x` như đã thiết lập.)*
 
-4. **Cập nhật Database (EF Core Migrations):**
-   Trong từng thư mục Service (ngoại trừ Shared và ApiGateway), chạy:
-   ```bash
-   dotnet ef migrations add InitialCreate
-   dotnet ef database update
-   ```
+4. **Cập nhật Database:**
+   - **Cách 1 (Sử dụng SQL Scripts có sẵn):** 
+     Thực thi các file `.sql` trong thư mục `DatabaseSchemas/` (bao gồm `auth_db.sql`, `user_db.sql`, `post_db.sql`, `chat_db.sql`) vào các database tương ứng trên PostgreSQL.
+   - **Cách 2 (Sử dụng EF Core Migrations):**
+     Nếu bạn muốn dùng EF Core, hãy xóa thư mục `Migrations` cũ (nếu có) trong từng Service. Sau đó chạy lệnh sau trong thư mục từng Service (ngoại trừ Shared và ApiGateway):
+     ```bash
+     dotnet ef migrations add InitialCreate
+     dotnet ef database update
+     ```
 
 5. **Truy cập:**
    Truy cập Swagger UI tổng hợp thông qua cổng của **ApiGateway**:

@@ -47,8 +47,8 @@ public class PostController : ControllerBase
 
         var dto = new PostDto(
             post.Id, post.AuthorId, post.AuthorUsername, post.Content,
-            post.ImageUrl, post.VideoUrl, post.LikeCount, post.CommentCount,
-            post.ShareCount, post.IsPublished, post.Visibility,
+            null, null, post.LikeCount, post.CommentCount,
+            post.ShareCount, post.IsActive, post.Visibility,
             post.CreatedAt, post.UpdatedAt
         );
         return Ok(dto);
@@ -64,8 +64,8 @@ public class PostController : ControllerBase
         var posts = await _repository.GetByAuthorIdAsync(authorId, take, skip);
         var dtos = posts.Select(p => new PostDto(
             p.Id, p.AuthorId, p.AuthorUsername, p.Content,
-            p.ImageUrl, p.VideoUrl, p.LikeCount, p.CommentCount,
-            p.ShareCount, p.IsPublished, p.Visibility,
+            null, null, p.LikeCount, p.CommentCount,
+            p.ShareCount, p.IsActive, p.Visibility,
             p.CreatedAt, p.UpdatedAt
         ));
         return Ok(dtos);
@@ -81,8 +81,8 @@ public class PostController : ControllerBase
         var posts = await _repository.GetFeedAsync(take, skip);
         var dtos = posts.Select(p => new PostDto(
             p.Id, p.AuthorId, p.AuthorUsername, p.Content,
-            p.ImageUrl, p.VideoUrl, p.LikeCount, p.CommentCount,
-            p.ShareCount, p.IsPublished, p.Visibility,
+            null, null, p.LikeCount, p.CommentCount,
+            p.ShareCount, p.IsActive, p.Visibility,
             p.CreatedAt, p.UpdatedAt
         ));
         return Ok(dtos);

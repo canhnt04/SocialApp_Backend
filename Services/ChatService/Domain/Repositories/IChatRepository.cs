@@ -11,10 +11,10 @@ public interface IChatRepository
     Task AddMessageAsync(Message message, CancellationToken cancellationToken = default);
 
     // Groups
-    Task<ChatGroup?> GetGroupByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<IEnumerable<ChatGroup>> GetUserGroupsAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task AddGroupAsync(ChatGroup group, CancellationToken cancellationToken = default);
-    Task AddGroupMemberAsync(ChatGroupMember member, CancellationToken cancellationToken = default);
+    Task<Chat?> GetGroupByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Chat>> GetUserGroupsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task AddGroupAsync(Chat group, CancellationToken cancellationToken = default);
+    Task AddGroupMemberAsync(ChatUser member, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

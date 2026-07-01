@@ -26,8 +26,7 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
             Content = request.Content,
             SenderId = request.SenderId,
             SenderUsername = request.SenderUsername,
-            RecipientId = request.RecipientId,
-            ChatGroupId = request.ChatGroupId
+            ChatId = request.ChatId
         };
 
         await _repository.AddMessageAsync(message, cancellationToken);
@@ -41,8 +40,7 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
                 MessageId = message.Id,
                 message.SenderId,
                 message.SenderUsername,
-                message.RecipientId,
-                message.ChatGroupId,
+                message.ChatId,
                 SentAt = DateTime.UtcNow
             }));
         }
@@ -50,7 +48,7 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
 
         return new MessageDto(
             message.Id, message.Content, message.SenderId, message.SenderUsername,
-            message.RecipientId, message.ChatGroupId, message.IsRead, message.CreatedAt
+            message.ChatId, message.IsRead, message.CreatedAt
         );
     }
 }

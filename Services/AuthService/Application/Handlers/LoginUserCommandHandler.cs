@@ -32,8 +32,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, AuthRes
         if (!user.IsActive)
             throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
-        // Cập nhật thời gian hoạt động
-        user.LastActiveAt = DateTime.UtcNow;
+        // Cập nhật thời gian hoạt động (Chuyển sang UserService quản lý profile)
         user.UpdatedAt = DateTime.UtcNow;
 
         // Tạo token

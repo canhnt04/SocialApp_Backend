@@ -39,11 +39,8 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
         var user = new User
         {
             Username = request.Username,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
             Email = request.Email,
             Phone = request.Phone,
-            Dob = DateOnly.FromDateTime(request.Dob),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         };
 
@@ -71,8 +68,12 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
             _messageBroker?.Publish("auth.user.registered", JsonSerializer.Serialize(new
             {
                 UserId = user.Id,
-                user.Username,
-                user.Email,
+                Username = user.Username,
+                Email = user.Email,
+                Phone = user.Phone,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Dob = request.Dob,
                 RegisteredAt = DateTime.UtcNow
             }));
         }

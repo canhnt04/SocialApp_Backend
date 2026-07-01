@@ -22,13 +22,9 @@ public class AuthDbContext : DbContext
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Phone).IsUnique();
             entity.Property(e => e.Username).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.LastName).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Email).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Phone).HasMaxLength(20).IsRequired();
             entity.Property(e => e.PasswordHash).IsRequired();
-            entity.Property(e => e.Avatar).HasMaxLength(500);
-            entity.Property(e => e.Bio).HasMaxLength(1000);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

@@ -21,7 +21,7 @@ public class ChatHub : Hub
     /// <summary>
     /// Gửi tin nhắn cá nhân (1-1)
     /// </summary>
-    public async Task SendPrivateMessage(string recipientId, string senderUsername, string content)
+    public async Task SendPrivateMessage(string chatId, string recipientId, string senderUsername, string content)
     {
         var senderId = Context.UserIdentifier ?? Context.ConnectionId;
 
@@ -30,7 +30,7 @@ public class ChatHub : Hub
             Content = content,
             SenderId = Guid.Parse(senderId),
             SenderUsername = senderUsername,
-            RecipientId = Guid.Parse(recipientId)
+            ChatId = Guid.Parse(chatId)
         };
 
         await _repository.AddMessageAsync(message);
@@ -38,7 +38,7 @@ public class ChatHub : Hub
 
         var messageDto = new MessageDto(
             message.Id, message.Content, message.SenderId, message.SenderUsername,
-            message.RecipientId, null, false, message.CreatedAt
+            message.ChatId, false, message.CreatedAt
         );
 
         // Gửi tới người nhận
@@ -59,7 +59,7 @@ public class ChatHub : Hub
             Content = content,
             SenderId = Guid.Parse(senderId),
             SenderUsername = senderUsername,
-            ChatGroupId = Guid.Parse(groupId)
+            ChatId = Guid.Parse(groupId)
         };
 
         await _repository.AddMessageAsync(message);
@@ -67,7 +67,7 @@ public class ChatHub : Hub
 
         var messageDto = new MessageDto(
             message.Id, message.Content, message.SenderId, message.SenderUsername,
-            null, message.ChatGroupId, false, message.CreatedAt
+            message.ChatId, false, message.CreatedAt
         );
 
         // Gửi tới tất cả thành viên trong nhóm

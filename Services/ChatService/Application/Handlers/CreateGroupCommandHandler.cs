@@ -17,11 +17,10 @@ public class CreateGroupCommandHandler : IRequestHandler<CreateGroupCommand, Gro
 
     public async Task<GroupDto> Handle(CreateGroupCommand request, CancellationToken cancellationToken)
     {
-        var group = new ChatGroup
+        var group = new Chat
         {
             Name = request.Name,
-            Description = request.Description,
-            CreatedByUserId = request.CreatedByUserId
+            Type = ChatType.Group
         };
 
         await _repository.AddGroupAsync(group, cancellationToken);
@@ -29,12 +28,10 @@ public class CreateGroupCommandHandler : IRequestHandler<CreateGroupCommand, Gro
         // Thêm thành viên
         foreach (var member in request.Members)
         {
-            var groupMember = new ChatGroupMember
+            var groupMember = new ChatUser
             {
-                ChatGroupId = group.Id,
-                UserId = member.UserId,
-                Username = member.Username,
-                IsAdmin = member.IsAdmin
+                ChatId = group.Id,
+                UserId = member.UserId
             };
             await _repository.AddGroupMemberAsync(groupMember, cancellationToken);
         }
@@ -42,7 +39,7 @@ public class CreateGroupCommandHandler : IRequestHandler<CreateGroupCommand, Gro
         await _repository.SaveChangesAsync(cancellationToken);
 
         return new GroupDto(
-            group.Id, group.Name, group.Description, group.CreatedByUserId,
+            group.Id, group.Name,
             request.Members, group.CreatedAt
         );
     }

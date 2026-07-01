@@ -8,16 +8,8 @@ public class Message : BaseEntity
     public Guid SenderId { get; set; }
     public string SenderUsername { get; set; } = default!;
 
-    /// <summary>
-    /// Null nếu là tin nhắn nhóm
-    /// </summary>
-    public Guid? RecipientId { get; set; }
-
-    /// <summary>
-    /// Null nếu là tin nhắn cá nhân
-    /// </summary>
-    public Guid? ChatGroupId { get; set; }
-    public ChatGroup? ChatGroup { get; set; }
+    public Guid ChatId { get; set; }
+    public Chat Chat { get; set; } = default!;
 
     public bool IsRead { get; set; } = false;
     public DateTime? ReadAt { get; set; }

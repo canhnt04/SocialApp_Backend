@@ -29,7 +29,7 @@ public class ChatController : ControllerBase
     {
         var command = new SendMessageCommand(
             dto.Content, dto.SenderId, dto.SenderUsername,
-            dto.RecipientId, dto.ChatGroupId
+            dto.ChatId
         );
         var result = await _mediator.Send(command);
         return Ok(result);
@@ -47,7 +47,7 @@ public class ChatController : ControllerBase
         var messages = await _repository.GetMessagesBetweenUsersAsync(userId1, userId2, take, skip);
         var dtos = messages.Select(m => new MessageDto(
             m.Id, m.Content, m.SenderId, m.SenderUsername,
-            m.RecipientId, m.ChatGroupId, m.IsRead, m.CreatedAt
+            m.ChatId, m.IsRead, m.CreatedAt
         ));
         return Ok(dtos);
     }
@@ -63,7 +63,7 @@ public class ChatController : ControllerBase
         var messages = await _repository.GetGroupMessagesAsync(groupId, take, skip);
         var dtos = messages.Select(m => new MessageDto(
             m.Id, m.Content, m.SenderId, m.SenderUsername,
-            m.RecipientId, m.ChatGroupId, m.IsRead, m.CreatedAt
+            m.ChatId, m.IsRead, m.CreatedAt
         ));
         return Ok(dtos);
     }
@@ -76,7 +76,7 @@ public class ChatController : ControllerBase
     public async Task<IActionResult> CreateGroup([FromBody] CreateGroupDto dto)
     {
         var command = new CreateGroupCommand(
-            dto.Name, dto.Description, dto.CreatedByUserId, dto.Members
+            dto.Name, dto.Members
         );
         var result = await _mediator.Send(command);
         return Ok(result);
@@ -91,8 +91,8 @@ public class ChatController : ControllerBase
     {
         var groups = await _repository.GetUserGroupsAsync(userId);
         var dtos = groups.Select(g => new GroupDto(
-            g.Id, g.Name, g.Description, g.CreatedByUserId,
-            g.Members.Select(m => new GroupMemberDto(m.UserId, m.Username, m.IsAdmin)).ToList(),
+            g.Id, g.Name ?? string.Empty,
+            g.Members.Select(m => new GroupMemberDto(m.UserId)).ToList(),
             g.CreatedAt
         ));
         return Ok(dtos);

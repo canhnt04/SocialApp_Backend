@@ -7,6 +7,5 @@ public record SendMessageCommand(
     string Content,
     Guid SenderId,
     string SenderUsername,
-    Guid? RecipientId,
-    Guid? ChatGroupId
+    Guid ChatId
 ) : IRequest<MessageDto>;

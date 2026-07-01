@@ -8,8 +8,8 @@ public class ChatDbContext : DbContext
     public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options) { }
 
     public DbSet<Message> Messages => Set<Message>();
-    public DbSet<ChatGroup> ChatGroups => Set<ChatGroup>();
-    public DbSet<ChatGroupMember> ChatGroupMembers => Set<ChatGroupMember>();
+    public DbSet<Chat> Chats => Set<Chat>();
+    public DbSet<ChatUser> ChatUsers => Set<ChatUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,33 +20,30 @@ public class ChatDbContext : DbContext
             entity.ToTable("Messages");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.SenderId);
-            entity.HasIndex(e => e.RecipientId);
-            entity.HasIndex(e => e.ChatGroupId);
+            entity.HasIndex(e => e.ChatId);
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.SenderUsername).HasMaxLength(50).IsRequired();
-            entity.HasOne(e => e.ChatGroup)
+            entity.HasOne(e => e.Chat)
                   .WithMany(g => g.Messages)
-                  .HasForeignKey(e => e.ChatGroupId)
+                  .HasForeignKey(e => e.ChatId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<ChatGroup>(entity =>
+        modelBuilder.Entity<Chat>(entity =>
         {
-            entity.ToTable("ChatGroups");
+            entity.ToTable("Chats");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Type).HasConversion<string>();
         });
 
-        modelBuilder.Entity<ChatGroupMember>(entity =>
+        modelBuilder.Entity<ChatUser>(entity =>
         {
-            entity.ToTable("ChatGroupMembers");
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.ChatGroupId, e.UserId }).IsUnique();
-            entity.Property(e => e.Username).HasMaxLength(50).IsRequired();
-            entity.HasOne(e => e.ChatGroup)
+            entity.ToTable("ChatUsers");
+            entity.HasKey(e => new { e.ChatId, e.UserId });
+            entity.HasOne(e => e.Chat)
                   .WithMany(g => g.Members)
-                  .HasForeignKey(e => e.ChatGroupId)
+                  .HasForeignKey(e => e.ChatId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

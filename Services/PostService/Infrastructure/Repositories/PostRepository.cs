@@ -20,7 +20,7 @@ public class PostRepository : IPostRepository
     public async Task<IEnumerable<Post>> GetByAuthorIdAsync(
         Guid authorId, int take = 20, int skip = 0, CancellationToken cancellationToken = default)
         => await _context.Posts
-            .Where(p => p.AuthorId == authorId && p.IsPublished)
+            .Where(p => p.AuthorId == authorId && p.IsActive)
             .OrderByDescending(p => p.CreatedAt)
             .Skip(skip)
             .Take(take)
@@ -29,7 +29,7 @@ public class PostRepository : IPostRepository
     public async Task<IEnumerable<Post>> GetFeedAsync(
         int take = 20, int skip = 0, CancellationToken cancellationToken = default)
         => await _context.Posts
-            .Where(p => p.IsPublished && p.Visibility == PostVisibility.Public)
+            .Where(p => p.IsActive && p.Visibility == PostVisibility.Public)
             .OrderByDescending(p => p.CreatedAt)
             .Skip(skip)
             .Take(take)

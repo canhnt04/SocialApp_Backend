@@ -8,6 +8,7 @@ public class UserDbContext : DbContext
     public UserDbContext(DbContextOptions<UserDbContext> options) : base(options) { }
 
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<Follow> Follows => Set<Follow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,6 +30,21 @@ public class UserDbContext : DbContext
             entity.Property(e => e.Bio).HasMaxLength(1000);
             entity.Property(e => e.Location).HasMaxLength(200);
             entity.Property(e => e.Website).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Follow>(entity =>
+        {
+            entity.ToTable("Follows");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.FollowerId, e.FollowingId }).IsUnique();
+            entity.HasOne(e => e.Follower)
+                  .WithMany()
+                  .HasForeignKey(e => e.FollowerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Following)
+                  .WithMany()
+                  .HasForeignKey(e => e.FollowingId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
