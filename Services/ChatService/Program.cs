@@ -7,7 +7,7 @@ using SocialApp.ChatService.Infrastructure.Data;
 using SocialApp.ChatService.Domain.Repositories;
 using SocialApp.ChatService.Infrastructure.Repositories;
 using SocialApp.ChatService.Hubs;
-using SocialApp.Shared.Utilities;
+using SocialApp.ChatService.Infrastructure.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 

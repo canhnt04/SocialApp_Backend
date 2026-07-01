@@ -3,7 +3,7 @@ using System.Text;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace SocialApp.Shared.Utilities;
+namespace SocialApp.ChatService.Infrastructure.Messaging;
 
 public class MessageBroker : IDisposable
 {

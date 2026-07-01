@@ -3,7 +3,7 @@ using SocialApp.AuthService.Application.Commands;
 using SocialApp.AuthService.Application.DTOs;
 using SocialApp.AuthService.Domain.Entities;
 using SocialApp.AuthService.Domain.Repositories;
-using SocialApp.Shared.Utilities;
+using SocialApp.AuthService.Infrastructure.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

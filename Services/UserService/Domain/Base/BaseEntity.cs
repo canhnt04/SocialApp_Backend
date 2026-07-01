@@ -1,4 +1,4 @@
-namespace SocialApp.Shared.Base;
+namespace SocialApp.UserService.Domain.Base;
 
 public abstract class BaseEntity
 {

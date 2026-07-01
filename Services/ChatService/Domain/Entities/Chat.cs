@@ -1,4 +1,4 @@
-using SocialApp.Shared.Base;
+using SocialApp.ChatService.Domain.Base;
 
 namespace SocialApp.ChatService.Domain.Entities;
 

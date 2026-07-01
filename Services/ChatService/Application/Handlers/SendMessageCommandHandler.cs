@@ -3,7 +3,7 @@ using SocialApp.ChatService.Application.Commands;
 using SocialApp.ChatService.Application.DTOs;
 using SocialApp.ChatService.Domain.Entities;
 using SocialApp.ChatService.Domain.Repositories;
-using SocialApp.Shared.Utilities;
+using SocialApp.ChatService.Infrastructure.Messaging;
 using System.Text.Json;
 
 namespace SocialApp.ChatService.Application.Handlers;

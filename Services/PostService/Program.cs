@@ -6,7 +6,7 @@ using MediatR;
 using SocialApp.PostService.Infrastructure.Data;
 using SocialApp.PostService.Domain.Repositories;
 using SocialApp.PostService.Infrastructure.Repositories;
-using SocialApp.Shared.Utilities;
+using SocialApp.PostService.Infrastructure.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 

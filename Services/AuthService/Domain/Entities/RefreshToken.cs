@@ -1,4 +1,4 @@
-using SocialApp.Shared.Base;
+using SocialApp.AuthService.Domain.Base;
 
 namespace SocialApp.AuthService.Domain.Entities;
 

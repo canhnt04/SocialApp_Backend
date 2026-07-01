@@ -1,4 +1,4 @@
-using SocialApp.Shared.Base;
+using SocialApp.PostService.Domain.Base;
 
 namespace SocialApp.PostService.Domain.Entities;
 

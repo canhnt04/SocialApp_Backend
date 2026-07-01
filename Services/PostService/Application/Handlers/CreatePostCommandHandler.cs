@@ -3,7 +3,7 @@ using SocialApp.PostService.Application.Commands;
 using SocialApp.PostService.Application.DTOs;
 using SocialApp.PostService.Domain.Entities;
 using SocialApp.PostService.Domain.Repositories;
-using SocialApp.Shared.Utilities;
+using SocialApp.PostService.Infrastructure.Messaging;
 using System.Text.Json;
 
 namespace SocialApp.PostService.Application.Handlers;

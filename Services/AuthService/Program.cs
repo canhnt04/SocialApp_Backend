@@ -6,7 +6,7 @@ using MediatR;
 using SocialApp.AuthService.Infrastructure.Data;
 using SocialApp.AuthService.Domain.Repositories;
 using SocialApp.AuthService.Infrastructure.Repositories;
-using SocialApp.Shared.Utilities;
+using SocialApp.AuthService.Infrastructure.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
