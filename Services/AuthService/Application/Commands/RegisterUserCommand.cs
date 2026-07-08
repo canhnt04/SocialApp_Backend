@@ -1,14 +1,11 @@
 using MediatR;
-using SocialApp.AuthService.Application.DTOs;
+using SocialApp.AuthService.Application.DTOs.Responses;
 
 namespace SocialApp.AuthService.Application.Commands;
 
 public record RegisterUserCommand(
     string Username,
-    string FirstName,
-    string LastName,
     string Email,
     string Phone,
-    DateTime Dob,
     string Password
-) : IRequest<AuthResponse>;
+) : IRequest<RegisterResponse>;

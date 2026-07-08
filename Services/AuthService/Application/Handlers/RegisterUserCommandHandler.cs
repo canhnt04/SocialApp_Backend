@@ -1,34 +1,37 @@
 using MediatR;
 using SocialApp.AuthService.Application.Commands;
-using SocialApp.AuthService.Application.DTOs;
+using SocialApp.AuthService.Application.DTOs.Responses;
 using SocialApp.AuthService.Domain.Entities;
 using SocialApp.AuthService.Domain.Repositories;
 using SocialApp.AuthService.Infrastructure.Messaging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
+// using Microsoft.Extensions.Logging;
 
 namespace SocialApp.AuthService.Application.Handlers;
 
-public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, AuthResponse>
+public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, RegisterResponse>
 {
     private readonly IAuthRepository _repository;
     private readonly IConfiguration _configuration;
     private readonly MessageBroker? _messageBroker;
 
-    public RegisterUserCommandHandler(IAuthRepository repository, IConfiguration configuration, MessageBroker? messageBroker = null)
+    private readonly ILogger<RegisterUserCommandHandler> _logger;
+
+    public RegisterUserCommandHandler(
+        IAuthRepository repository,
+        IConfiguration configuration,
+        ILogger<RegisterUserCommandHandler> logger,
+        MessageBroker? messageBroker = null)
     {
         _repository = repository;
         _configuration = configuration;
+        _logger = logger;
         _messageBroker = messageBroker;
     }
 
-    public async Task<AuthResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async Task<RegisterResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        // Kiểm tra tính duy nhất
+        // validate
         if (await _repository.ExistsByUsernameAsync(request.Username, cancellationToken))
             throw new InvalidOperationException("Tên đăng nhập đã tồn tại");
         if (await _repository.ExistsByEmailAsync(request.Email, cancellationToken))
@@ -38,6 +41,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
 
         var user = new User
         {
+            Id = Guid.NewGuid(),
             Username = request.Username,
             Email = request.Email,
             Phone = request.Phone,
@@ -45,70 +49,38 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
         };
 
         await _repository.AddUserAsync(user, cancellationToken);
-
-        // Tạo token
-        var accessToken = GenerateJwtToken(user, "AccessToken");
-        var refreshTokenValue = GenerateJwtToken(user, "RefreshToken");
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var refreshExpiresAt = DateTime.UtcNow.AddDays(int.Parse(jwtSettings["RefreshTokenExpirationDays"] ?? "7"));
-
-        var refreshToken = new RefreshToken
-        {
-            Token = refreshTokenValue,
-            ExpiresAt = refreshExpiresAt,
-            UserId = user.Id
-        };
-
-        await _repository.AddRefreshTokenAsync(refreshToken, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        // Phát sự kiện qua RabbitMQ
+        // Publish event
         try
         {
-            _messageBroker?.Publish("auth.user.registered", JsonSerializer.Serialize(new
-            {
-                UserId = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Phone = user.Phone,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Dob = request.Dob,
-                RegisteredAt = DateTime.UtcNow
-            }));
+            _messageBroker?.Publish(
+                "auth.user.registered",
+                JsonSerializer.Serialize(new
+                {
+                    UserId = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Phone = user.Phone,
+                    RegisteredAt = DateTime.UtcNow
+                }));
         }
-        catch
+        catch (Exception ex)
         {
-            // Ghi log lỗi nhưng không ảnh hưởng luồng chính
+            _logger.LogError(
+                ex,
+                "Failed to publish user registered event. UserId: {UserId}",
+                user.Id);
         }
 
-        return new AuthResponse(accessToken, refreshTokenValue, refreshExpiresAt);
-    }
+        _logger.LogInformation(
+            "User registered successfully. UserId: {UserId}, Username: {Username}",
+            user.Id,
+            user.Username);
 
-    private string GenerateJwtToken(User user, string tokenType)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secret = jwtSettings["SecretKey"] ?? "SuperSecretKeyChangeMe123!";
-        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = tokenType == "AccessToken"
-            ? DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["AccessTokenExpirationMinutes"] ?? "15"))
-            : DateTime.UtcNow.AddDays(int.Parse(jwtSettings["RefreshTokenExpirationDays"] ?? "7"));
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim("typ", tokenType)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: expires,
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new RegisterResponse(
+            user.Id,
+            user.Username
+        );
     }
 }
