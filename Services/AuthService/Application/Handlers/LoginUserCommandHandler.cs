@@ -1,45 +1,46 @@
 using MediatR;
 using SocialApp.AuthService.Application.Commands;
-using SocialApp.AuthService.Application.DTOs;
+using SocialApp.AuthService.Application.DTOs.Responses;
+using SocialApp.AuthService.Application.Interfaces;
 using SocialApp.AuthService.Domain.Entities;
 using SocialApp.AuthService.Domain.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace SocialApp.AuthService.Application.Handlers;
 
-public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, AuthResponse>
+public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, LoginResponse>
 {
     private readonly IAuthRepository _repository;
-    private readonly IConfiguration _configuration;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly ITokenService _tokenService;
 
-    public LoginUserCommandHandler(IAuthRepository repository, IConfiguration configuration)
+    public LoginUserCommandHandler(
+        IAuthRepository repository,
+        IRefreshTokenRepository refreshTokenRepository,
+        ITokenService tokenService)
     {
         _repository = repository;
-        _configuration = configuration;
+        _refreshTokenRepository = refreshTokenRepository;
+        _tokenService = tokenService;
     }
 
-    public async Task<AuthResponse> Handle(LoginUserCommand request, CancellationToken cancellationToken)
+    public async Task<LoginResponse> Handle(LoginUserCommand request, CancellationToken cancellationToken)
     {
         var user = await _repository.GetByUsernameOrEmailAsync(request.UsernameOrEmail, cancellationToken);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Tên đăng nhập, email hoặc mật khẩu không hợp lệ");
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("Tài khoản không tồn tại");
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Tên đăng nhập hoặc mật khẩu không hợp lệ");
 
         if (!user.IsActive)
             throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
-        // Cập nhật thời gian hoạt động (Chuyển sang UserService quản lý profile)
-        user.UpdatedAt = DateTime.UtcNow;
-
-        // Tạo token
-        var accessToken = GenerateJwtToken(user, "AccessToken");
-        var refreshTokenValue = GenerateJwtToken(user, "RefreshToken");
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var refreshExpiresAt = DateTime.UtcNow.AddDays(int.Parse(jwtSettings["RefreshTokenExpirationDays"] ?? "7"));
+        var accessToken = _tokenService.GenerateAccessToken(user);
+        var refreshTokenValue = _tokenService.GenerateRefreshToken(user);
+        var refreshExpiresAt = _tokenService.GetRefreshTokenExpiresAt();
 
         var refreshToken = new RefreshToken
         {
@@ -48,36 +49,14 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, AuthRes
             UserId = user.Id
         };
 
-        await _repository.AddRefreshTokenAsync(refreshToken, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+        await _refreshTokenRepository.SaveChangesAsync(cancellationToken);
 
-        return new AuthResponse(accessToken, refreshTokenValue, refreshExpiresAt);
-    }
-
-    private string GenerateJwtToken(User user, string tokenType)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secret = jwtSettings["SecretKey"] ?? "SuperSecretKeyChangeMe123!";
-        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = tokenType == "AccessToken"
-            ? DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["AccessTokenExpirationMinutes"] ?? "15"))
-            : DateTime.UtcNow.AddDays(int.Parse(jwtSettings["RefreshTokenExpirationDays"] ?? "7"));
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim("typ", tokenType)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: expires,
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new LoginResponse(
+            user.Id,
+            user.Username,
+            accessToken,
+            refreshTokenValue,
+            refreshExpiresAt);
     }
 }
