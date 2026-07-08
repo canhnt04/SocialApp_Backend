@@ -12,7 +12,5 @@ public interface IAuthRepository
     Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<bool> ExistsByPhoneAsync(string phone, CancellationToken cancellationToken = default);
     Task AddUserAsync(User user, CancellationToken cancellationToken = default);
-    Task AddRefreshTokenAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default);
-    Task<RefreshToken?> GetRefreshTokenAsync(string token, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

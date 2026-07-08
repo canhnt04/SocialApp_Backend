@@ -1,30 +1,30 @@
 using MediatR;
 using SocialApp.AuthService.Application.Commands;
-using SocialApp.AuthService.Application.DTOs;
+using SocialApp.AuthService.Application.Interfaces;
 using SocialApp.AuthService.Domain.Entities;
 using SocialApp.AuthService.Domain.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using SocialApp.AuthService.Application.DTOs.Responses;
 
 namespace SocialApp.AuthService.Application.Handlers;
 
-public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, AuthResponse>
+public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, RefreshTokenResponse>
 {
-    private readonly IAuthRepository _repository;
-    private readonly IConfiguration _configuration;
+    private readonly IRefreshTokenRepository _repository;
+    private readonly ITokenService _tokenService;
 
-    public RefreshTokenCommandHandler(IAuthRepository repository, IConfiguration configuration)
+    public RefreshTokenCommandHandler(IRefreshTokenRepository repository, ITokenService tokenService)
     {
         _repository = repository;
-        _configuration = configuration;
+        _tokenService = tokenService;
     }
 
-    public async Task<AuthResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    public async Task<RefreshTokenResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        var existingToken = await _repository.GetRefreshTokenAsync(request.RefreshToken, cancellationToken);
+        var tokenPrincipal = _tokenService.ValidateToken(request.RefreshToken, "RefreshToken", validateLifetime: false);
+        if (tokenPrincipal == null)
+            throw new UnauthorizedAccessException("Refresh token không hợp lệ");
+
+        var existingToken = await _repository.GetByTokenAsync(request.RefreshToken, cancellationToken);
 
         if (existingToken == null)
             throw new UnauthorizedAccessException("Refresh token không hợp lệ");
@@ -32,17 +32,11 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
         if (existingToken.ExpiresAt < DateTime.UtcNow)
             throw new UnauthorizedAccessException("Refresh token đã hết hạn");
 
-        // Thu hồi token cũ
-        existingToken.IsRevoked = true;
-        existingToken.RevokedAt = DateTime.UtcNow;
-
         var user = existingToken.User;
 
-        // Tạo token mới
-        var newAccessToken = GenerateJwtToken(user, "AccessToken");
-        var newRefreshTokenValue = GenerateJwtToken(user, "RefreshToken");
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var refreshExpiresAt = DateTime.UtcNow.AddDays(int.Parse(jwtSettings["RefreshTokenExpirationDays"] ?? "7"));
+        var newAccessToken = _tokenService.GenerateAccessToken(user);
+        var newRefreshTokenValue = _tokenService.GenerateRefreshToken(user);
+        var refreshExpiresAt = _tokenService.GetRefreshTokenExpiresAt();
 
         var newRefreshToken = new RefreshToken
         {
@@ -51,36 +45,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             UserId = user.Id
         };
 
-        await _repository.AddRefreshTokenAsync(newRefreshToken, cancellationToken);
+        await _repository.AddAsync(newRefreshToken, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return new AuthResponse(newAccessToken, newRefreshTokenValue, refreshExpiresAt);
-    }
-
-    private string GenerateJwtToken(User user, string tokenType)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secret = jwtSettings["SecretKey"] ?? "SuperSecretKeyChangeMe123!";
-        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = tokenType == "AccessToken"
-            ? DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["AccessTokenExpirationMinutes"] ?? "15"))
-            : DateTime.UtcNow.AddDays(int.Parse(jwtSettings["RefreshTokenExpirationDays"] ?? "7"));
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim("typ", tokenType)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: expires,
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new RefreshTokenResponse(newAccessToken, newRefreshTokenValue, refreshExpiresAt);
     }
 }
