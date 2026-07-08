@@ -17,7 +17,7 @@ public class ChatDbContext : DbContext
 
         modelBuilder.Entity<Message>(entity =>
         {
-            entity.ToTable("Messages");
+            entity.ToTable("messages");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.SenderId);
             entity.HasIndex(e => e.ChatId);
@@ -31,15 +31,19 @@ public class ChatDbContext : DbContext
 
         modelBuilder.Entity<Chat>(entity =>
         {
-            entity.ToTable("Chats");
+            entity.ToTable("chats");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Type).HasConversion<string>();
+            entity.Property(e => e.PrivateKey).HasMaxLength(100);
+            entity.HasIndex(e => e.PrivateKey)
+                  .IsUnique()
+                  .HasFilter("\"Type\" = 'Private'");
         });
 
         modelBuilder.Entity<ChatUser>(entity =>
         {
-            entity.ToTable("ChatUsers");
+            entity.ToTable("chat-users");
             entity.HasKey(e => new { e.ChatId, e.UserId });
             entity.HasOne(e => e.Chat)
                   .WithMany(g => g.Members)

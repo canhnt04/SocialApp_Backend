@@ -17,12 +17,43 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "ChatService API", Version = "v1" });
+    
+    // Cấu hình bảo mật JWT trong Swagger
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter only your token in the input box below (no 'Bearer ' prefix needed).",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
 
-    // Thêm XML comments từ file documentation
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            },
+            new List<string>()
+        }
+    });
+
+    // Cấu hình XML comments hiển thị mô tả API
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
+    {
         c.IncludeXmlComments(xmlPath);
+    }
 });
 
 // SignalR
@@ -39,18 +70,25 @@ builder.Services.AddMediatR(typeof(Program).Assembly);
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 
 // RabbitMQ (optional)
-try
+builder.Services.AddSingleton<MessageBroker>(sp =>
 {
-    var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
-    var messageBroker = new MessageBroker(
-        hostName: rabbitConfig["HostName"] ?? "localhost",
-        port: int.Parse(rabbitConfig["Port"] ?? "5672"),
-        userName: rabbitConfig["UserName"] ?? "guest",
-        password: rabbitConfig["Password"] ?? "guest"
-    );
-    builder.Services.AddSingleton(messageBroker);
-}
-catch { }
+    var rabbitConfig = sp.GetRequiredService<IConfiguration>().GetSection("RabbitMQ");
+    var logger = sp.GetRequiredService<ILogger<MessageBroker>>();
+    
+    if (!rabbitConfig.Exists())
+    {
+        logger.LogWarning("Không tìm thấy section 'RabbitMQ' trong file cấu hình!");
+    }
+
+    var hostName = rabbitConfig["HostName"] ?? "localhost";
+    var port = rabbitConfig.GetValue<int>("Port", 5672); 
+    var userName = rabbitConfig["UserName"] ?? "guest";
+    var password = rabbitConfig["Password"] ?? "guest";
+
+    return new MessageBroker(hostName, port, userName, password, logger);
+});
+
+builder.Services.AddSingleton<SocialApp.ChatService.Application.Interfaces.IMessagePublisher>(sp => sp.GetRequiredService<MessageBroker>());
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -114,10 +152,42 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
+// Warm up MessageBroker to establish connection early
+try
+{
+    app.Services.GetRequiredService<MessageBroker>();
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Error warming up MessageBroker");
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+var viewsPath = Path.Combine(builder.Environment.ContentRootPath, "Views");
+if (Directory.Exists(viewsPath))
+{
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(viewsPath),
+        RequestPath = ""
+    });
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(viewsPath),
+        RequestPath = ""
+    });
+}
+else
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 }
 
 app.UseHttpsRedirection();

@@ -53,6 +53,8 @@ dist/
 .env
 .env.local
 
+# Architecture notes
+ArchitectureFlow.md
 # Docker
 docker-compose.override.yml
 

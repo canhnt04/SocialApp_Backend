@@ -1,5 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
+using Microsoft.Extensions.Logging;
+using MediatR;
 using SocialApp.ChatService.Application.DTOs;
+using SocialApp.ChatService.Application.Commands;
 using SocialApp.ChatService.Domain.Entities;
 using SocialApp.ChatService.Domain.Repositories;
 
@@ -9,103 +14,145 @@ namespace SocialApp.ChatService.Hubs;
 /// SignalR Hub cho chat thời gian thực
 /// Hỗ trợ chat 1-1 và chat nhóm
 /// </summary>
+[Authorize]
 public class ChatHub : Hub
 {
     private readonly IChatRepository _repository;
+    private readonly IMediator _mediator;
+    private readonly ILogger<ChatHub> _logger;
 
-    public ChatHub(IChatRepository repository)
+    public ChatHub(IChatRepository repository, IMediator mediator, ILogger<ChatHub> logger)
     {
         _repository = repository;
+        _mediator = mediator;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Gửi tin nhắn cá nhân (1-1)
+    /// Tham gia phòng chat (Private hoặc Group)
     /// </summary>
-    public async Task SendPrivateMessage(string chatId, string recipientId, string senderUsername, string content)
+    public async Task JoinChat(string chatId)
     {
-        var senderId = Context.UserIdentifier ?? Context.ConnectionId;
-
-        var message = new Message
+        if (!TryGetCurrentUser(out var userId, out _))
         {
-            Content = content,
-            SenderId = Guid.Parse(senderId),
-            SenderUsername = senderUsername,
-            ChatId = Guid.Parse(chatId)
-        };
+            throw new HubException("Unauthorized user identity.");
+        }
 
-        await _repository.AddMessageAsync(message);
-        await _repository.SaveChangesAsync();
-
-        var messageDto = new MessageDto(
-            message.Id, message.Content, message.SenderId, message.SenderUsername,
-            message.ChatId, false, message.CreatedAt
-        );
-
-        // Gửi tới người nhận
-        await Clients.User(recipientId).SendAsync("ReceiveMessage", messageDto);
-        // Gửi xác nhận cho người gửi
-        await Clients.Caller.SendAsync("MessageSent", messageDto);
-    }
-
-    /// <summary>
-    /// Gửi tin nhắn nhóm
-    /// </summary>
-    public async Task SendGroupMessage(string groupId, string senderUsername, string content)
-    {
-        var senderId = Context.UserIdentifier ?? Context.ConnectionId;
-
-        var message = new Message
+        if (!Guid.TryParse(chatId, out var parsedChatId))
         {
-            Content = content,
-            SenderId = Guid.Parse(senderId),
-            SenderUsername = senderUsername,
-            ChatId = Guid.Parse(groupId)
-        };
+            throw new HubException("Invalid chatId.");
+        }
 
-        await _repository.AddMessageAsync(message);
-        await _repository.SaveChangesAsync();
+        var chat = await _repository.GetChatByIdAsync(parsedChatId);
+        if (chat == null)
+        {
+            throw new HubException("Chat room not found.");
+        }
 
-        var messageDto = new MessageDto(
-            message.Id, message.Content, message.SenderId, message.SenderUsername,
-            message.ChatId, false, message.CreatedAt
-        );
+        if (!chat.IsActive)
+        {
+            throw new HubException("Chat room is deactivated.");
+        }
 
-        // Gửi tới tất cả thành viên trong nhóm
-        await Clients.Group(groupId).SendAsync("ReceiveGroupMessage", messageDto);
+        var isMember = chat.Members.Any(m => m.UserId == userId);
+        if (!isMember)
+        {
+            throw new HubException("Forbidden. You are not a member of this chat.");
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
+        await Clients.Group(chatId).SendAsync("UserJoined", userId.ToString(), chatId);
     }
 
     /// <summary>
-    /// Tham gia nhóm chat
+    /// Rời khỏi phòng chat
     /// </summary>
-    public async Task JoinGroup(string groupId)
+    public async Task LeaveChat(string chatId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, groupId);
-        await Clients.Group(groupId).SendAsync("UserJoined", Context.UserIdentifier, groupId);
+        if (!TryGetCurrentUser(out var userId, out _))
+        {
+            throw new HubException("Unauthorized user identity.");
+        }
+
+        if (!Guid.TryParse(chatId, out var parsedChatId))
+        {
+            throw new HubException("Invalid chatId.");
+        }
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatId);
+        await Clients.Group(chatId).SendAsync("UserLeft", userId.ToString(), chatId);
     }
 
     /// <summary>
-    /// Rời nhóm chat
+    /// Gửi tin nhắn dùng chung cho cả Private và Group chat
     /// </summary>
-    public async Task LeaveGroup(string groupId)
+    public async Task SendMessage(string chatId, string content)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupId);
-        await Clients.Group(groupId).SendAsync("UserLeft", Context.UserIdentifier, groupId);
+        if (!TryGetCurrentUser(out var senderId, out var resolvedUsername))
+        {
+            throw new HubException("Unauthorized user identity.");
+        }
+
+        if (!Guid.TryParse(chatId, out var parsedChatId))
+        {
+            throw new HubException("Invalid chatId.");
+        }
+
+        try
+        {
+            var command = new SendMessageCommand(content, senderId, resolvedUsername, parsedChatId);
+            var messageDto = await _mediator.Send(command);
+
+            // Broadcast tới tất cả những người khác trong phòng chat
+            await Clients.OthersInGroup(chatId).SendAsync("ReceiveMessage", messageDto);
+            // Gửi báo nhận tin nhắn về cho caller
+            await Clients.Caller.SendAsync("MessageSent", messageDto);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error handling SendMessage for chatId {chatId}");
+            throw new HubException("An error occurred while processing your request.");
+        }
     }
 
     /// <summary>
     /// Thông báo đang gõ
     /// </summary>
-    public async Task Typing(string recipientId, string senderUsername)
+    public async Task Typing(string chatId)
     {
-        await Clients.User(recipientId).SendAsync("UserTyping", senderUsername);
-    }
+        if (!TryGetCurrentUser(out var senderId, out var resolvedUsername))
+        {
+            return;
+        }
 
-    /// <summary>
-    /// Thông báo đang gõ trong nhóm
-    /// </summary>
-    public async Task TypingInGroup(string groupId, string senderUsername)
-    {
-        await Clients.OthersInGroup(groupId).SendAsync("UserTypingInGroup", senderUsername, groupId);
+        if (!Guid.TryParse(chatId, out var parsedChatId))
+        {
+            return;
+        }
+
+        var chat = await _repository.GetChatByIdAsync(parsedChatId);
+        if (chat == null || !chat.IsActive) return;
+
+        var isMember = chat.Members.Any(m => m.UserId == senderId);
+        if (!isMember) return;
+
+        await Clients.OthersInGroup(chatId).SendAsync("UserTyping", resolvedUsername, chatId);
     }
 
     public override async Task OnConnectedAsync()
@@ -116,5 +163,19 @@ public class ChatHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await base.OnDisconnectedAsync(exception);
+    }
+
+    private bool TryGetCurrentUser(out Guid userId, out string username)
+    {
+        userId = Guid.Empty;
+        username = Context.User?.FindFirst(ClaimTypes.Name)?.Value
+                   ?? Context.User?.Identity?.Name
+                   ?? "unknown";
+
+        var rawUserId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? Context.User?.FindFirst("sub")?.Value
+                        ?? Context.UserIdentifier;
+
+        return Guid.TryParse(rawUserId, out userId) && userId != Guid.Empty;
     }
 }
