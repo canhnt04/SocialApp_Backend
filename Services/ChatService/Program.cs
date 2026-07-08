@@ -59,9 +59,9 @@ builder.Services.AddSwaggerGen(c =>
 // SignalR
 builder.Services.AddSignalR();
 
-// EF Core (PostgreSQL)
+// EF Core (SQL Server)
 builder.Services.AddDbContext<ChatDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // MediatR
 builder.Services.AddMediatR(typeof(Program).Assembly);

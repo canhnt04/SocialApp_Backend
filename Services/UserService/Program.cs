@@ -36,9 +36,9 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<AuthorizeOperationFilter>();
 });
 
-// EF Core (PostgreSQL)
+// EF Core (SQL Server)
 builder.Services.AddDbContext<UserDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // MediatR
 builder.Services.AddMediatR(typeof(Program).Assembly);

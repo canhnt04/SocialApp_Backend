@@ -40,11 +40,11 @@ public class UserDbContext : DbContext
             entity.HasOne(e => e.Follower)
                   .WithMany()
                   .HasForeignKey(e => e.FollowerId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Following)
                   .WithMany()
                   .HasForeignKey(e => e.FollowingId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

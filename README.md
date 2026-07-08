@@ -8,7 +8,7 @@ Hệ thống Backend cho Social App được xây dựng dựa trên kiến trú
 - **API Gateway:** YARP (Yet Another Reverse Proxy)
 - **Message Broker:** RabbitMQ (Giao tiếp bất đồng bộ qua Domain Events)
 - **Real-time:** SignalR (Sử dụng trong ChatService)
-- **Database:** PostgreSQL (Mỗi service sử dụng một Database độc lập để đảm bảo tính phân tán)
+- **Database:** SQL Server (Mỗi service sử dụng một Database độc lập để đảm bảo tính phân tán)
 - **Containerization:** Docker & Docker Compose
 - **Design Pattern:** Clean Architecture, CQRS (MediatR), Repository Pattern
 
@@ -54,8 +54,7 @@ Backend/
 │   └── PostService/
 │       ├── ...
 │       └── Dockerfile
-├── DatabaseSchemas/               # SQL scripts tạo database
-├── scripts/                       # Helper scripts (Docker init)
+├── scripts/                       # SQL Server init scripts (Docker)
 ├── docker-compose.yml             # Orchestrate toàn bộ hệ thống
 ├── run-all.ps1                    # Khởi chạy local (PowerShell)
 ├── stop-all.ps1                   # Dừng toàn bộ services local
@@ -131,11 +130,11 @@ Nơi tiếp nhận Request HTTP.
 
 ### Cách 1: Chạy Local (Development — khuyến nghị khi dev)
 
-Chạy PostgreSQL & RabbitMQ bằng Docker, còn các service chạy trực tiếp trên máy (hỗ trợ hot-reload):
+Chạy SQL Server & RabbitMQ bằng Docker, còn các service chạy trực tiếp trên máy (hỗ trợ hot-reload):
 
 ```powershell
-# 1. Khởi động infrastructure (PostgreSQL + RabbitMQ)
-docker-compose up -d postgres rabbitmq
+# 1. Khởi động infrastructure (SQL Server + RabbitMQ)
+docker-compose up -d sqlserver sqlserver-init rabbitmq
 
 # 2. Chạy tất cả services
 .\run-all.ps1
@@ -177,20 +176,18 @@ docker-compose down -v
 | **ChatService** | `http://localhost:5203` | `https://localhost:5103` |
 | **PostService** | `http://localhost:5204` | `https://localhost:5104` |
 | **RabbitMQ Management** | `http://localhost:15672` | — |
-| **PostgreSQL** | `localhost:5432` | — |
+| **SQL Server** | `localhost:1433` | — |
 
 ### Cập nhật Database
 
-Các services đã được cấu hình **auto-migrate** khi khởi động. Ngoài ra bạn cũng có thể:
+Các services đã được cấu hình **auto-migrate** khi khởi động (EF Core `Database.Migrate()`). Databases được tự động tạo bởi `sqlserver-init` container khi chạy Docker Compose.
 
-- **Cách 1 (SQL Scripts có sẵn):** 
-  Thực thi các file `.sql` trong thư mục `DatabaseSchemas/` (`auth_db.sql`, `user_db.sql`, `post_db.sql`, `chat_db.sql`) vào các database tương ứng trên PostgreSQL.
-- **Cách 2 (EF Core Migrations):**
-  ```bash
-  cd Services/AuthService
-  dotnet ef migrations add InitialCreate
-  dotnet ef database update
-  ```
+Nếu cần tạo lại migrations:
+```bash
+cd Services/AuthService
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
 
 ---
 
