@@ -60,6 +60,14 @@ app.MapGet("/", context =>
     return Task.CompletedTask;
 });
 
+// Serve chat test client directly
+var htmlPath = Path.Combine(app.Environment.ContentRootPath, "..", "chat_test_client.html");
+app.MapGet("/chat-test", async (HttpContext context) =>
+{
+    context.Response.ContentType = "text/html; charset=utf-8";
+    await context.Response.SendFileAsync(htmlPath);
+});
+
 app.MapReverseProxy();
 
 app.Run();

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres-chat:
+    image: postgres:15-alpine
+    container_name: socialapp-postgres-chat
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432" # Map to 5433 on host to avoid conflict with standard postgres instances
+    volumes:
+      - postgres_chat_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: socialapp-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "5672:5672"   # RabbitMQ AMQP port
+      - "15672:15672" # RabbitMQ Management Dashboard port
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: Services/ChatService/Dockerfile
+    container_name: socialapp-chat-service
+    ports:
+      - "5203:5203"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-chat;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=${RABBITMQ_DEFAULT_USER}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      postgres-chat:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
+volumes:
+  postgres_chat_data:

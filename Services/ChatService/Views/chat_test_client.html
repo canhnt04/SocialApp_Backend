@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialApp Chat WebSocket Test Client</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SignalR JS Client Library via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    
+    <!-- Link to external CSS styling sheet -->
+    <link rel="stylesheet" href="chat_test_client.css">
+</head>
+<body>
+
+    <header>
+        <h1>SocialApp - Realtime Chat Test Console</h1>
+        <p>Simulate User A and User B concurrently to test SignalR WebSockets (Private & Group Chats).</p>
+    </header>
+
+    <div class="alert-box" id="alertBox"></div>
+
+    <div class="gateway-config">
+        <label for="gatewayUrl">API Gateway URL</label>
+        <input type="text" id="gatewayUrl" value="http://localhost:5000">
+        <button id="btnAutoSetupPrivate" class="btn-success">⚡ Auto Setup Private Chat</button>
+        <button id="btnAutoSetupGroup" class="btn-purple">👥 Auto Setup Group Chat</button>
+    </div>
+
+    <div class="container">
+        <!-- USER A PANEL -->
+        <div class="user-panel" id="panelA">
+            <div class="panel-title">
+                <span>User A (Alice)</span>
+                <span class="status-badge" id="statusBadgeA">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Disconnected</span>
+                </span>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Select Mock Profile</label>
+                    <select id="mockProfileA" onchange="applyMockProfile('A')" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #333; background: #222; color: #fff;">
+                        <option value="">-- Choose Profile --</option>
+                        <option value="alice">Alice (Dev Creator)</option>
+                        <option value="bob">Bob (Dev Member)</option>
+                        <option value="charlie">Charlie (Dev Member)</option>
+                        <option value="david">David (Dev Member)</option>
+                        <option value="eve">Eve (Dev Member)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>User ID (Guid)</label>
+                    <div class="input-row">
+                        <input type="text" id="userIdA" placeholder="User ID Guid">
+                        <button class="btn-secondary" onclick="generateGuid('userIdA')">Random</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="usernameA" placeholder="e.g. user_alice">
+                </div>
+
+                <div class="input-row">
+                    <button onclick="getToken('A')">1. Get Token</button>
+                    <button onclick="connectWebSocket('A')" class="btn-secondary" id="btnConnectA" disabled>2. Connect WS</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Chat Mode</label>
+                    <select id="chatModeA" onchange="toggleChatMode('A')">
+                        <option value="private">Private (1-1 Chat)</option>
+                        <option value="group">Group Chat</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="chatIdLabelA">Target Chat ID (Private Chat Room Guid)</label>
+                    <div class="input-row">
+                        <input type="text" id="chatIdA" placeholder="Chat/Group ID Guid">
+                        <button class="btn-secondary" id="btnVerifyA" onclick="createOrVerifyChat('A')">Create with B</button>
+                    </div>
+                    <div class="input-row" id="groupJoinRowA" style="display:none; margin-top: 8px;">
+                        <button class="btn-purple" style="width: 100%;" onclick="joinGroupHub('A')">Join Group Room (WS)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="messages-container" id="messagesA">
+                    <!-- Messages will appear here -->
+                </div>
+                <div class="typing-indicator" id="typingA"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="msgInputA" placeholder="Type a message..." disabled oninput="handleTyping('A')">
+                    <button onclick="sendMessage('A')" id="btnSendA" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- USER B PANEL -->
+        <div class="user-panel" id="panelB">
+            <div class="panel-title">
+                <span>User B (Bob)</span>
+                <span class="status-badge" id="statusBadgeB">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Disconnected</span>
+                </span>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Select Mock Profile</label>
+                    <select id="mockProfileB" onchange="applyMockProfile('B')" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #333; background: #222; color: #fff;">
+                        <option value="">-- Choose Profile --</option>
+                        <option value="alice">Alice (Dev Creator)</option>
+                        <option value="bob">Bob (Dev Member)</option>
+                        <option value="charlie">Charlie (Dev Member)</option>
+                        <option value="david">David (Dev Member)</option>
+                        <option value="eve">Eve (Dev Member)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>User ID (Guid)</label>
+                    <div class="input-row">
+                        <input type="text" id="userIdB" placeholder="User ID Guid">
+                        <button class="btn-secondary" onclick="generateGuid('userIdB')">Random</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="usernameB" placeholder="e.g. user_bob">
+                </div>
+
+                <div class="input-row">
+                    <button onclick="getToken('B')">1. Get Token</button>
+                    <button onclick="connectWebSocket('B')" class="btn-secondary" id="btnConnectB" disabled>2. Connect WS</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Chat Mode</label>
+                    <select id="chatModeB" onchange="toggleChatMode('B')">
+                        <option value="private">Private (1-1 Chat)</option>
+                        <option value="group">Group Chat</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="chatIdLabelB">Target Chat ID (Private Chat Room Guid)</label>
+                    <div class="input-row">
+                        <input type="text" id="chatIdB" placeholder="Chat/Group ID Guid">
+                        <button class="btn-secondary" id="btnVerifyB" onclick="syncChatId('B')">Sync from A</button>
+                    </div>
+                    <div class="input-row" id="groupJoinRowB" style="display:none; margin-top: 8px;">
+                        <button class="btn-purple" style="width: 100%;" onclick="joinGroupHub('B')">Join Group Room (WS)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="messages-container" id="messagesB">
+                    <!-- Messages will appear here -->
+                </div>
+                <div class="typing-indicator" id="typingB"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="msgInputB" placeholder="Type a message..." disabled oninput="handleTyping('B')">
+                    <button onclick="sendMessage('B')" id="btnSendB" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to external JS logic handler -->
+    <script src="chat_test_client.js"></script>
+</body>
+</html>

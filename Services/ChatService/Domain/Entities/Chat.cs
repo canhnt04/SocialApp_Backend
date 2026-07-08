@@ -7,6 +7,8 @@ public class Chat : BaseEntity
     public string? Name { get; set; }
     public ChatType Type { get; set; } = ChatType.Private;
     public bool IsActive { get; set; } = true;
+    public Guid? CreatorId { get; set; }
+    public string? PrivateKey { get; set; }
 
     // Navigation
     public ICollection<ChatUser> Members { get; set; } = new List<ChatUser>();
