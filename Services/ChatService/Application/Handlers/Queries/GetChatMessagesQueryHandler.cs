@@ -29,7 +29,7 @@ public class GetChatMessagesQueryHandler : IRequestHandler<GetChatMessagesQuery,
         }
 
         var messages = await _repository.GetChatMessagesAsync(request.ChatId, request.Take, request.Skip, cancellationToken);
-        
+
         return messages.Select(m => new MessageDto(
             m.Id, m.Content, m.SenderId, m.SenderUsername,
             m.ChatId, m.IsRead, m.CreatedAt

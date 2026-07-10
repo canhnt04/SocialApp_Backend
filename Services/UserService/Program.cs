@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MediatR;
+using MassTransit;
 using SocialApp.UserService.Infrastructure.Data;
 using SocialApp.UserService.Domain.Repositories;
 using SocialApp.UserService.Infrastructure.Repositories;
@@ -7,6 +8,7 @@ using SocialApp.UserService.Infrastructure.Authentication;
 using SocialApp.UserService.Middleware.ExceptionMiddleware;
 using Microsoft.OpenApi.Models;
 using SocialApp.UserService.Swagger;
+using SocialApp.UserService.Application.Consumers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +42,24 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// MassTransit & RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<UserRegisteredConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+        cfg.Host(rabbitMqHost, "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 // MediatR
 builder.Services.AddMediatR(typeof(Program).Assembly);
 
@@ -47,9 +67,6 @@ builder.Services.AddMediatR(typeof(Program).Assembly);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
-
-// Register RabbitMQ Listener Background Service
-builder.Services.AddHostedService<SocialApp.UserService.Infrastructure.Messaging.RabbitMqListenerService>();
 
 // JWT Authentication
 builder.Services.AddSocialAppJwtAuthentication(builder.Configuration);

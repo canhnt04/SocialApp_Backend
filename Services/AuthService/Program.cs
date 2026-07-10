@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MediatR;
+using MassTransit;
 using SocialApp.AuthService.Infrastructure.Data;
 using SocialApp.AuthService.Domain.Repositories;
 using SocialApp.AuthService.Infrastructure.Repositories;
-using SocialApp.AuthService.Infrastructure.Messaging;
 using SocialApp.AuthService.Application.Interfaces;
 using SocialApp.AuthService.Infrastructure.Security;
 using Microsoft.OpenApi.Models;
@@ -45,6 +45,24 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// MassTransit & RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    // x.AddConsumer<SomeConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+        cfg.Host(rabbitMqHost, "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 // MediatR
 builder.Services.AddMediatR(typeof(Program).Assembly);
 
@@ -52,23 +70,6 @@ builder.Services.AddMediatR(typeof(Program).Assembly);
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
-// RabbitMQ MessageBroker (optional - không crash nếu RabbitMQ chưa chạy)
-try
-{
-    var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
-    var messageBroker = new MessageBroker(
-        hostName: rabbitConfig["HostName"] ?? "localhost",
-        port: int.Parse(rabbitConfig["Port"] ?? "5672"),
-        userName: rabbitConfig["UserName"] ?? "guest",
-        password: rabbitConfig["Password"] ?? "guest"
-    );
-    builder.Services.AddSingleton(messageBroker);
-}
-catch
-{
-    // RabbitMQ chưa sẵn sàng, bỏ qua
-}
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

@@ -9,6 +9,6 @@ public class PostMedia : BaseEntity
     public string MediaType { get; set; } = default!;
     public string? MimeType { get; set; }
     public string FileSize { get; set; } = default!;
-    
+
     public Post Post { get; set; } = default!;
 }

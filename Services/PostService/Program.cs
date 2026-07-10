@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MediatR;
+using MassTransit;
 using SocialApp.PostService.Infrastructure.Data;
 using SocialApp.PostService.Domain.Repositories;
 using SocialApp.PostService.Infrastructure.Repositories;
@@ -34,19 +35,24 @@ builder.Services.AddMediatR(typeof(Program).Assembly);
 // DI
 builder.Services.AddScoped<IPostRepository, PostRepository>();
 
-// RabbitMQ (optional)
-try
+// RabbitMQ (MassTransit)
+builder.Services.AddMassTransit(x =>
 {
-    var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
-    var messageBroker = new MessageBroker(
-        hostName: rabbitConfig["HostName"] ?? "localhost",
-        port: int.Parse(rabbitConfig["Port"] ?? "5672"),
-        userName: rabbitConfig["UserName"] ?? "guest",
-        password: rabbitConfig["Password"] ?? "guest"
-    );
-    builder.Services.AddSingleton(messageBroker);
-}
-catch { }
+    // x.AddConsumer<SomeConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
+        var rabbitMqHost = rabbitConfig["Host"] ?? rabbitConfig["HostName"] ?? "localhost";
+        cfg.Host(rabbitMqHost, "/", h =>
+        {
+            h.Username(rabbitConfig["Username"] ?? rabbitConfig["UserName"] ?? "guest");
+            h.Password(rabbitConfig["Password"] ?? "guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

@@ -17,7 +17,7 @@ public class GetUserGroupsQueryHandler : IRequestHandler<GetUserGroupsQuery, IEn
     public async Task<IEnumerable<GroupDto>> Handle(GetUserGroupsQuery request, CancellationToken cancellationToken)
     {
         var groups = await _repository.GetUserGroupsAsync(request.UserId, cancellationToken);
-        
+
         return groups.Select(g => new GroupDto(
             g.Id,
             g.Name ?? string.Empty,

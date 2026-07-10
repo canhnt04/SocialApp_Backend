@@ -44,10 +44,10 @@ public class AddMembersToGroupCommandHandler : IRequestHandler<AddMembersToGroup
         var membersList = updatedGroup!.Members.Select(m => m.UserId).ToList();
 
         return new GroupDto(
-            updatedGroup.Id, 
+            updatedGroup.Id,
             updatedGroup.Name ?? string.Empty,
             updatedGroup.CreatorId ?? Guid.Empty,
-            membersList, 
+            membersList,
             updatedGroup.CreatedAt,
             membersList.Count
         );

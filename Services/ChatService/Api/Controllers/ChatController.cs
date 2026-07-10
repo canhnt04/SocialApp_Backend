@@ -82,7 +82,7 @@ public class ChatController : ControllerBase
             dto.Content, currentUserId, currentUsername,
             dto.ChatId
         );
-        
+
         try
         {
             var result = await _mediator.Send(command);

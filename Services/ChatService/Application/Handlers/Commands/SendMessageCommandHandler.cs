@@ -16,7 +16,7 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
     private readonly ILogger<SendMessageCommandHandler>? _logger;
 
     public SendMessageCommandHandler(
-        IChatRepository repository, 
+        IChatRepository repository,
         IMessagePublisher? messagePublisher = null,
         ILogger<SendMessageCommandHandler>? logger = null)
     {
@@ -77,9 +77,9 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
                     message.ChatId,
                     SentAt = DateTime.UtcNow
                 };
-                
+
                 _messagePublisher.Publish("chat.message.sent", JsonSerializer.Serialize(eventData));
-                
+
                 _logger?.LogInformation($"Message published to RabbitMQ: MessageId={message.Id}, RoutingKey=chat.message.sent");
             }
             catch (Exception ex)

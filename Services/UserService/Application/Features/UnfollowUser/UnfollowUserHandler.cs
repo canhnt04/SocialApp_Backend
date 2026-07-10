@@ -1,23 +1,21 @@
 using MediatR;
-using SocialApp.UserService.Application.Commands;
-using SocialApp.UserService.Application.DTOs;
 using SocialApp.UserService.Domain.Repositories;
 using SocialApp.UserService.Infrastructure.Authentication;
 
-namespace SocialApp.UserService.Application.Handlers;
+namespace SocialApp.UserService.Application.Features.UnfollowUser;
 
-public class UnfollowUserCommandHandler : IRequestHandler<UnfollowUserCommand, FollowActionResponseDto>
+public class UnfollowUserHandler : IRequestHandler<UnfollowUserCommand, UnfollowUserResponse>
 {
     private readonly IUserRepository _repository;
     private readonly ICurrentUser _currentUser;
 
-    public UnfollowUserCommandHandler(IUserRepository repository, ICurrentUser currentUser)
+    public UnfollowUserHandler(IUserRepository repository, ICurrentUser currentUser)
     {
         _repository = repository;
         _currentUser = currentUser;
     }
 
-    public async Task<FollowActionResponseDto> Handle(UnfollowUserCommand request, CancellationToken cancellationToken)
+    public async Task<UnfollowUserResponse> Handle(UnfollowUserCommand request, CancellationToken cancellationToken)
     {
         var authUserId = _currentUser.Id
             ?? throw new UnauthorizedAccessException("JWT không hợp lệ hoặc thiếu claim sub");
@@ -42,7 +40,7 @@ public class UnfollowUserCommandHandler : IRequestHandler<UnfollowUserCommand, F
             await _repository.SaveChangesAsync(cancellationToken);
         }
 
-        return new FollowActionResponseDto(
+        return new UnfollowUserResponse(
             targetProfile.Id,
             false,
             $"Đã bỏ theo dõi {targetProfile.Username}"

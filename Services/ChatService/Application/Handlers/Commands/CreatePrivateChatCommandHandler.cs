@@ -44,7 +44,7 @@ public class CreateOrGetPrivateChatCommandHandler : IRequestHandler<CreateOrGetP
         {
             // Kiểm tra xem chat riêng tư đã tồn tại chưa
             var existingChat = await _repository.GetPrivateChatByUserPairAsync(minUserId, maxUserId, cancellationToken);
-            
+
             if (existingChat != null)
             {
                 await transaction.RollbackAsync(cancellationToken);

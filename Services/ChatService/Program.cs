@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MediatR;
+using MassTransit;
 using SocialApp.ChatService.Infrastructure.Data;
 using SocialApp.ChatService.Domain.Repositories;
 using SocialApp.ChatService.Infrastructure.Repositories;
@@ -17,7 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "ChatService API", Version = "v1" });
-    
+
     // Cấu hình bảo mật JWT trong Swagger
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -69,26 +70,27 @@ builder.Services.AddMediatR(typeof(Program).Assembly);
 // DI
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 
-// RabbitMQ (optional)
-builder.Services.AddSingleton<MessageBroker>(sp =>
+// RabbitMQ (MassTransit)
+builder.Services.AddMassTransit(x =>
 {
-    var rabbitConfig = sp.GetRequiredService<IConfiguration>().GetSection("RabbitMQ");
-    var logger = sp.GetRequiredService<ILogger<MessageBroker>>();
-    
-    if (!rabbitConfig.Exists())
+    // x.AddConsumer<SomeConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
     {
-        logger.LogWarning("Không tìm thấy section 'RabbitMQ' trong file cấu hình!");
-    }
+        var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? builder.Configuration["RabbitMQ:HostName"] ?? "localhost";
+        cfg.Host(rabbitMqHost, "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? builder.Configuration["RabbitMQ:UserName"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
 
-    var hostName = rabbitConfig["HostName"] ?? "localhost";
-    var port = rabbitConfig.GetValue<int>("Port", 5672); 
-    var userName = rabbitConfig["UserName"] ?? "guest";
-    var password = rabbitConfig["Password"] ?? "guest";
-
-    return new MessageBroker(hostName, port, userName, password, logger);
+        cfg.ConfigureEndpoints(context);
+    });
 });
 
-builder.Services.AddSingleton<SocialApp.ChatService.Application.Interfaces.IMessagePublisher>(sp => sp.GetRequiredService<MessageBroker>());
+// Remove old RabbitMQ (optional) completely as MassTransit replaces it
+// builder.Services.AddSingleton<MessageBroker>(...);
+// builder.Services.AddSingleton<SocialApp.ChatService.Application.Interfaces.IMessagePublisher>(...);
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

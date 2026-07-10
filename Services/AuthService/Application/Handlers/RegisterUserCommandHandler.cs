@@ -1,11 +1,10 @@
+using EventBus.Auth;
+using MassTransit;
 using MediatR;
 using SocialApp.AuthService.Application.Commands;
 using SocialApp.AuthService.Application.DTOs.Responses;
 using SocialApp.AuthService.Domain.Entities;
 using SocialApp.AuthService.Domain.Repositories;
-using SocialApp.AuthService.Infrastructure.Messaging;
-using System.Text.Json;
-// using Microsoft.Extensions.Logging;
 
 namespace SocialApp.AuthService.Application.Handlers;
 
@@ -13,20 +12,21 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
 {
     private readonly IAuthRepository _repository;
     private readonly IConfiguration _configuration;
-    private readonly MessageBroker? _messageBroker;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     private readonly ILogger<RegisterUserCommandHandler> _logger;
 
     public RegisterUserCommandHandler(
         IAuthRepository repository,
         IConfiguration configuration,
-        ILogger<RegisterUserCommandHandler> logger,
-        MessageBroker? messageBroker = null)
+        IPublishEndpoint publishEndpoint,
+        ILogger<RegisterUserCommandHandler> logger
+       )
     {
         _repository = repository;
         _configuration = configuration;
+        _publishEndpoint = publishEndpoint;
         _logger = logger;
-        _messageBroker = messageBroker;
     }
 
     public async Task<RegisterResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -54,16 +54,19 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         // Publish event
         try
         {
-            _messageBroker?.Publish(
-                "auth.user.registered",
-                JsonSerializer.Serialize(new
-                {
-                    UserId = user.Id,
-                    Username = user.Username,
-                    Email = user.Email,
-                    Phone = user.Phone,
-                    RegisteredAt = DateTime.UtcNow
-                }));
+            await _publishEndpoint.Publish(new UserRegisteredEvent
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Phone = user.Phone,
+                RegisteredAt = DateTime.UtcNow
+            }, cancellationToken);
+
+            _logger.LogInformation(
+                "User registered successfully. UserId: {UserId}, Username: {Username}",
+                user.Id,
+                user.Username);
         }
         catch (Exception ex)
         {
@@ -73,10 +76,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
                 user.Id);
         }
 
-        _logger.LogInformation(
-            "User registered successfully. UserId: {UserId}, Username: {Username}",
-            user.Id,
-            user.Username);
+
 
         return new RegisterResponse(
             user.Id,

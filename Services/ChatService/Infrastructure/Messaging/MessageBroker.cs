@@ -15,9 +15,9 @@ public class MessageBroker : IMessagePublisher, IDisposable
     private readonly ILogger<MessageBroker>? _logger;
 
     public MessageBroker(
-        string hostName = "localhost", 
-        int port = 5672, 
-        string userName = "guest", 
+        string hostName = "localhost",
+        int port = 5672,
+        string userName = "guest",
         string password = "guest",
         ILogger<MessageBroker>? logger = null)
     {
@@ -74,7 +74,7 @@ public class MessageBroker : IMessagePublisher, IDisposable
             properties.Persistent = true;
             properties.DeliveryMode = 2; // Persistent delivery
             _channel.BasicPublish(exchange: _exchangeName, routingKey: routingKey, basicProperties: properties, body: body);
-            
+
             _logger?.LogDebug($"Message published: RoutingKey={routingKey}, Size={body.Length}");
         }
         catch (Exception ex)
@@ -100,7 +100,7 @@ public class MessageBroker : IMessagePublisher, IDisposable
                     _channel.BasicAck(ea.DeliveryTag, multiple: false);
             };
             _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
-            
+
             _logger?.LogInformation($"Subscribed to routing key: {routingKey}");
         }
         catch (Exception ex)

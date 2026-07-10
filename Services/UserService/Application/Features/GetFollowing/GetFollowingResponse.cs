@@ -1,17 +1,8 @@
-namespace SocialApp.UserService.Application.DTOs;
+namespace SocialApp.UserService.Application.Features.GetFollowing;
 
-public record UpdateUserDto(
-    string? FirstName,
-    string? LastName,
-    string? Phone,
-    string? Avatar,
-    DateOnly? Dob,
-    string? Bio,
-    string? Location,
-    string? Website
-);
+public record GetFollowingResponse(List<GetFollowingUserItem> Following);
 
-public record UserProfileDto(
+public record GetFollowingUserItem(
     Guid Id,
     Guid AuthUserId,
     string Username,

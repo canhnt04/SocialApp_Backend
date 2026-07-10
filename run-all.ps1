@@ -36,7 +36,7 @@ foreach ($svc in $services) {
     Start-Process powershell -ArgumentList @(
         "-NoExit",
         "-Command",
-        "Set-Location '$projectPath'; Write-Host '>>> Running $name ...' -ForegroundColor Yellow; dotnet run"
+        "Set-Location '$projectPath'; Write-Host '>>> Running $name ...' -ForegroundColor Yellow; dotnet watch --non-interactive"
     )
 
     # Đợi 1 giây giữa mỗi service để tránh xung đột port khi khởi động

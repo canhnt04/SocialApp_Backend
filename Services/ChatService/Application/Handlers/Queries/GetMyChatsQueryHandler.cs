@@ -17,7 +17,7 @@ public class GetMyChatsQueryHandler : IRequestHandler<GetMyChatsQuery, IEnumerab
     public async Task<IEnumerable<ChatListDto>> Handle(GetMyChatsQuery request, CancellationToken cancellationToken)
     {
         var chats = await _repository.GetUserChatsAsync(request.CurrentUserId, request.Take, request.Skip, cancellationToken);
-        
+
         return chats.Select(c => new ChatListDto(
             c.Id,
             c.Type.ToString(),
