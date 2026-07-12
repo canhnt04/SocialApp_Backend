@@ -30,9 +30,20 @@ public class PostController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Create([FromBody] CreatePostDto dto)
     {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(userIdString, out Guid userId))
+        {
+            return Unauthorized(new { message = "Token không hợp lệ hoặc đã hết hạn." });
+        }
+        var username = User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue("unique_name") ?? "Unknown";
+
         var command = new CreatePostCommand(
-            dto.AuthorId, dto.AuthorUsername, dto.Content,
-            dto.ImageUrl, dto.VideoUrl, dto.Visibility
+            userId,
+            username,
+            dto.Content,
+            dto.ImageUrl,
+            dto.VideoUrl,
+            dto.Visibility
         );
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
