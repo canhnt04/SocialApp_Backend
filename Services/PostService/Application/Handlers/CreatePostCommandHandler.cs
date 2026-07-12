@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace SocialApp.PostService.Application.Handlers;
 
-public class CreatePostCommandHandler : IRequestHandler<CreatePostCommand, PostDto>
+public class CreatePostCommandHandler : IRequestHandler<SoftCreatePostCommand, PostDto>
 {
     private readonly IPostRepository _repository;
     private readonly MessageBroker? _messageBroker;
@@ -19,7 +19,7 @@ public class CreatePostCommandHandler : IRequestHandler<CreatePostCommand, PostD
         _messageBroker = messageBroker;
     }
 
-    public async Task<PostDto> Handle(CreatePostCommand request, CancellationToken cancellationToken)
+    public async Task<PostDto> Handle(SoftCreatePostCommand request, CancellationToken cancellationToken)
     {
         var post = new Post
         {

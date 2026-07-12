@@ -7,6 +7,7 @@ public class Post : BaseEntity
     public Guid AuthorId { get; set; }
     public string AuthorUsername { get; set; } = default!;
     public Guid? OriginalPostId { get; set; }
+    public Post? OriginalPost { get; set; }
     public string Content { get; set; } = default!;
     public int LikeCount { get; set; } = 0;
     public int CommentCount { get; set; } = 0;
