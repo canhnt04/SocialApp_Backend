@@ -33,3 +33,30 @@ public record PostDto(
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
+
+public record LikePostDto(
+    Guid AuthorId
+);
+
+public record LikeResponseDto(
+    Guid PostId,
+    bool IsLiked,
+    int LikeCount
+);
+
+public record CreateCommentDto(
+    Guid AuthorId,
+    string Content,
+    Guid? ParentId = null
+);
+
+public record CommentDto(
+    Guid Id,
+    Guid PostId,
+    Guid AuthorId,
+    Guid? ParentId,
+    string Content,
+    bool IsActive,
+    DateTime CreatedAt,
+    DateTime UpdatedAt
+);

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SocialApp.PostService.Domain.Entities;
 
 namespace SocialApp.PostService.Infrastructure.Data;
@@ -27,6 +27,10 @@ public class PostDbContext : DbContext
             entity.Property(e => e.Visibility)
                   .HasConversion<int>()
                   .HasDefaultValue(PostVisibility.Public);
+            entity.HasOne(p => p.OriginalPost)
+                .WithMany() // Một bài viết gốc có thể có nhiều bài share trỏ về
+                .HasForeignKey(p => p.OriginalPostId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<PostMedia>(entity =>
@@ -54,7 +58,7 @@ public class PostDbContext : DbContext
             entity.HasOne(e => e.Parent)
                   .WithMany(c => c.Replies)
                   .HasForeignKey(e => e.ParentId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Like>(entity =>
@@ -66,11 +70,11 @@ public class PostDbContext : DbContext
             entity.HasOne(e => e.Post)
                   .WithMany(p => p.Likes)
                   .HasForeignKey(e => e.PostId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.NoAction);
             entity.HasOne(e => e.Comment)
                   .WithMany(c => c.Likes)
                   .HasForeignKey(e => e.CommentId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
