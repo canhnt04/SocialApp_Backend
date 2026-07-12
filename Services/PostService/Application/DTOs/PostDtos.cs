@@ -3,8 +3,6 @@ using SocialApp.PostService.Domain.Entities;
 namespace SocialApp.PostService.Application.DTOs;
 
 public record CreatePostDto(
-    Guid AuthorId,
-    string AuthorUsername,
     string Content,
     string? ImageUrl,
     string? VideoUrl,
