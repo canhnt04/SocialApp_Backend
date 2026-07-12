@@ -30,7 +30,7 @@ public class PostController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Create([FromBody] CreatePostDto dto)
     {
-        var command = new SoftCreatePostCommand(
+        var command = new CreatePostCommand(
             dto.AuthorId, dto.AuthorUsername, dto.Content,
             dto.ImageUrl, dto.VideoUrl, dto.Visibility
         );

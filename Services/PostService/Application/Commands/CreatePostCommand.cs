@@ -4,7 +4,7 @@ using SocialApp.PostService.Domain.Entities;
 
 namespace SocialApp.PostService.Application.Commands;
 
-public record SoftCreatePostCommand(
+public record CreatePostCommand(
     Guid AuthorId,
     string AuthorUsername,
     string Content,
