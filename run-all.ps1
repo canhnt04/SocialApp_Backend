@@ -1,13 +1,8 @@
-# ============================================================
+﻿# ============================================================
 # run-all.ps1 — Khởi chạy toàn bộ services của Social App
 # ============================================================
-# Mỗi service sẽ được chạy trong một cửa sổ PowerShell riêng.
-# Để dừng tất cả, đóng các cửa sổ hoặc nhấn Ctrl+C trong từng cửa sổ.
-# ============================================================
-
 $root = $PSScriptRoot
 
-# Danh sách các service cần chạy: [Tên hiển thị, Đường dẫn tương đối]
 $services = @(
     @{ Name = "ApiGateway";  Path = "ApiGateway" },
     @{ Name = "AuthService"; Path = "Services\AuthService" },
@@ -39,7 +34,6 @@ foreach ($svc in $services) {
         "Set-Location '$projectPath'; Write-Host '>>> Running $name ...' -ForegroundColor Yellow; dotnet watch --non-interactive"
     )
 
-    # Đợi 1 giây giữa mỗi service để tránh xung đột port khi khởi động
     Start-Sleep -Seconds 1
 }
 

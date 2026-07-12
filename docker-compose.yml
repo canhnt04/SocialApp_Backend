@@ -8,17 +8,18 @@ services:
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "123456"
+      MSSQL_SA_PASSWORD: "Password123456!"
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "123456" -C -Q "SELECT 1" -b -o /dev/null
+      # Sử dụng CMD-SHELL và bổ sung tham số -C để tránh lỗi chứng chỉ nội bộ container
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Password123456!' -C -Q 'SELECT 1' -b -o /dev/null"]
       interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - socialapp-network
 

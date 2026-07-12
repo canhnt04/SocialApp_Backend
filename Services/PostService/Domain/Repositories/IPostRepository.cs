@@ -10,5 +10,14 @@ public interface IPostRepository
     Task AddAsync(Post post, CancellationToken cancellationToken = default);
     void Update(Post post);
     void Delete(Post post);
+    Task AddMediaAsync(PostMedia media, CancellationToken cancellationToken = default);
+    Task<Like?> GetLikeAsync(Guid authorId, Guid postId, CancellationToken cancellationToken = default);
+    Task AddLikeAsync(Like like, CancellationToken cancellationToken = default);
+    void UpdateLike(Like like);
+    Task<Comment?> GetCommentByIdAsync(Guid commentId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Comment>> GetCommentsByPostIdAsync(Guid postId, CancellationToken cancellationToken = default);
+    Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default);
+    void DeleteComment(Comment comment);
+    void UpdateComment(Comment comment);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
